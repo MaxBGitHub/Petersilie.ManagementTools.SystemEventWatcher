@@ -10,22 +10,6 @@ using Microsoft.Win32;
 
 namespace Petersilie.ManagementTools.SystemEventWatcher
 {
-    class main_cs
-    {
-        static void EventConsumed(object sender, MessagePumpEventArgs e)
-        {
-            Console.WriteLine(e.Source + " - " + e.Action);
-        }
-
-        static void Main(string[] args)
-        {
-            var sysWatcher = new SystemEventWatcher(EventTypeFlag.All);
-            sysWatcher.Start();
-            while (true) { }
-        }
-    }
-
-
     public class SystemEventWatcher : IDisposable
     {
         private EventTypeFlag       _eventFlags;
@@ -50,7 +34,6 @@ namespace Petersilie.ManagementTools.SystemEventWatcher
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss:ms"));
-            sb.Append($"\t{Environment.MachineName}");
             sb.Append($"\t{e.Source} {e.Action}\n");
             _logWriter.Write(sb.ToString());
         }
@@ -99,7 +82,10 @@ namespace Petersilie.ManagementTools.SystemEventWatcher
         public SystemEventWatcher(EventTypeFlag flags)
         {
             _eventFlags = flags;
-            _logWriter = new AsyncWriter("c:\\users\\max.bader\\desktop\\logtest.log");
+            string appdata = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string file = "sysevent.watcher";
+            string filename = System.IO.Path.Combine(appdata, file);
+            _logWriter = new AsyncWriter(filename);
         }
 
 
