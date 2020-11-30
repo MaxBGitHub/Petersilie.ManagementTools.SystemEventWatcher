@@ -86,19 +86,23 @@ namespace Petersilie.ManagementTools.SystemEventWatcher
             InitializeComponent();
         }
 
+        /* Assigned in the custom InitializeComponent() method
+        ** in the designer class of the MessagePumpProvider window. */
         private void MessagePump_Load(object sender, EventArgs e)
         {
             ApplyEvents();
         }
 
+        /* Assigned in the custom InitializeComponent() method
+        ** in the designer class of the MessagePumpProvider window. */
         private void MessagePump_FormClosing(object sender, FormClosingEventArgs e)
         {
             RemoveEvents();
-        }
-
+        }        
     }
 
 
+    // Designer of MessagePumpProvider.
     partial class MessagePumpProvider
     {
         private System.ComponentModel.IContainer components = null;
@@ -106,9 +110,9 @@ namespace Petersilie.ManagementTools.SystemEventWatcher
         protected override void Dispose(bool disposing)
         {
             if (disposing && (null != components)) {
-                components.Dispose();
-                this.RemoveEvents();
+                components.Dispose();                
             }
+            this.RemoveEvents();
             base.Dispose(disposing);
         }
 
