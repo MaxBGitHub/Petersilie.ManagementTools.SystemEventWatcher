@@ -1,91 +1,231 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿using Microsoft.Win32;
+using System;
 using System.Threading;
 using System.Windows.Forms;
-using Microsoft.Win32;
 
 namespace Petersilie.ManagementTools.SystemEventWatcher
 {
+    /// <summary>
+    /// Listens for system events.
+    /// </summary>
     public class SystemEventWatcher : IDisposable
     {
-        private EventTypeFlag       _eventFlags;
-        private MessagePumpProvider _messagePumpProvider;
-        private Thread              _messagePumpThread;
-        private AsyncWriter         _logWriter;
+        private MessagePumpProvider _msgPump; // Hidden window for WndProc.
+        private Thread _msgPumpThread; // Thread running hidden window.
 
 
-        private event EventHandler<MessagePumpEventArgs> onSystemEventConsumed;
-        public event EventHandler<MessagePumpEventArgs> SystemEventConsumed
+        /// <summary>
+        /// Occurs when a user preference is changing.
+        /// </summary>
+        public event EventHandler<UserPreferenceChangingEventArgs> UserPreferenceChanging
         {
             add {
-                onSystemEventConsumed += value;
+                _msgPump.OnUserPreferenceChanging += value;
             }
             remove {
-                onSystemEventConsumed -= value;
+                _msgPump.OnUserPreferenceChanging -= value;
             }
         }
 
-
-        private void WriteEntry(MessagePumpEventArgs e)
+        /// <summary>
+        /// Occurs when a user preference is changed.
+        /// </summary>
+        public event EventHandler<UserPreferenceChangedEventArgs> UserPreferenceChanged
         {
-            StringBuilder sb = new StringBuilder();
-            sb.Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss:ms"));
-            sb.Append($"\t{e.Source} {e.Action}\n");
-            _logWriter.Write(sb.ToString());
+            add {
+                _msgPump.OnUserPreferencedChanged += value;
+            }
+            remove {
+                _msgPump.OnUserPreferencedChanged -= value;
+            }
         }
 
-
-        private void PumpRecieved(object sender, MessagePumpEventArgs e)
+        /// <summary>
+        /// Occurs when the user changes the time on the system clock.
+        /// </summary>
+        public event EventHandler<EventArgs> TimeChanged
         {
-            WriteEntry(e);
-            onSystemEventConsumed?.Invoke(this, e);
+            add {
+                _msgPump.OnTimeChanged += value;
+            }
+            remove {
+                _msgPump.OnTimeChanged -= value;
+            }
         }
 
+        /// <summary>
+        /// Occurs when a windows timer interval has expired.
+        /// </summary>
+        public event EventHandler<TimerElapsedEventArgs> TimerElapsed
+        {
+            add {
+                _msgPump.OnTimerElapsed += value;
+            }
+            remove {
+                _msgPump.OnTimerElapsed -= value;
+            }
+        }
 
+        /// <summary>
+        /// Occurs when the user is logging off or shutting down the system.
+        /// </summary>
+        public event EventHandler<SessionEndedEventArgs> SessionEnded
+        {
+            add {
+                _msgPump.OnSessionEnded += value;
+            }
+            remove {
+                _msgPump.OnSessionEnded -= value;
+            }
+        }
+
+        /// <summary>
+        /// Occurs when the user is trying to logg of or shut down the system.
+        /// </summary>
+        public event EventHandler<SessionEndingEventArgs> SessionEnding
+        {
+            add {
+                _msgPump.OnSessionEnding += value;                
+            }
+            remove {
+                _msgPump.OnSessionEnding -= value;
+            }
+        }
+
+        /// <summary>
+        /// Occurs when the user suspends or resumes the system.
+        /// </summary>
+        public event EventHandler<PowerModeChangedEventArgs> PowerModeChanged
+        {
+            add {
+                _msgPump.OnPowerModeChanged += value;
+            }
+            remove {
+                _msgPump.OnPowerModeChanged -= value;
+            }
+        }
+
+        /// <summary>
+        /// Occurs when the user switches to an application 
+        /// that uses a different palette.
+        /// </summary>
+        public event EventHandler<EventArgs> PaletteChanged
+        {
+            add {
+                _msgPump.OnPalleteChanged += value;
+            }
+            remove {
+                _msgPump.OnPalleteChanged -= value;
+            }
+        }
+
+        /// <summary>
+        /// Occurs when the user adds fonts to or 
+        /// removes fonts from the system.
+        /// </summary>
+        public event EventHandler<EventArgs> InstalledFontsChanged
+        {
+            add {
+                _msgPump.OnInstalledFontsChanged += value;
+            }
+            remove {
+                _msgPump.OnInstalledFontsChanged -= value;
+            }
+        }
+
+        /// <summary>
+        /// Occurs before the thread that listens for system
+        /// events is terminated.
+        /// <para>
+        /// Use this event to free the <see cref="SystemEventWatcher"/>
+        /// and all its resources by using its Dispose() method.
+        /// </para>
+        /// </summary>
+        public event EventHandler<EventArgs> EventsThreadShutdown
+        {
+            add {
+                _msgPump.OnEventsThreadShutdown += value;
+            }
+            remove {
+                _msgPump.OnEventsThreadShutdown -= value;
+            }
+        }
+
+        /// <summary>
+        /// Occurs when the display settings are changing.
+        /// </summary>
+        public event EventHandler<EventArgs> DisplaySettingsChanging
+        {
+            add {
+                _msgPump.OnDisplaySettingsChanging += value;
+            }
+            remove {
+                _msgPump.OnDisplaySettingsChanging -= value;
+            }
+        }
+
+        /// <summary>
+        /// Occurs when the user changes the display settings.
+        /// </summary>
+        public event EventHandler<EventArgs> DisplaySettingsChanged
+        {
+            add {
+                _msgPump.OnDisplaySettingsChanged += value;
+            }
+            remove {
+                _msgPump.OnDisplaySettingsChanged -= value;
+            }
+        }
+
+        /// <summary>
+        /// Stop the <see cref="SystemEventWatcher"/> and free 
+        /// all resources used by it.
+        /// </summary>
         public void Stop()
         {
-            if (null != _messagePumpThread) {
-                _messagePumpThread.Join(500);
-                if (_messagePumpThread.IsAlive) {
-                    _messagePumpThread.Abort();
+            if (null != _msgPumpThread) {
+                _msgPumpThread.Join(500);
+                if (_msgPumpThread.IsAlive) {
+                    _msgPumpThread.Abort();
                 }
-                _messagePumpThread = null;
+                _msgPumpThread = null;
             }
 
-            if (null != _messagePumpProvider) {
-                _messagePumpProvider.Close();
-                _messagePumpProvider.Dispose();
-                _messagePumpProvider = null;
+            if (null != _msgPump) {
+                _msgPump.Close();
+                _msgPump.Dispose();
+                _msgPump = null;
             }            
         }
 
+        /// <summary>
+        /// Start listening for system events.
+        /// </summary>
         public void Start()
         {
-            _messagePumpThread = new Thread(new ThreadStart(InitMessagePump));
-            _messagePumpThread.Start();
+            _msgPumpThread = new Thread(new ThreadStart(InitMessagePump));
+            _msgPumpThread.Start();
         }
 
+        // Run the invisible MessagePumpProvider window.
         private void InitMessagePump()
         {
-            _messagePumpProvider = new MessagePumpProvider(_eventFlags);
-            _messagePumpProvider.SystemEventConsumed += this.PumpRecieved;
-            Application.Run(_messagePumpProvider);
+            Application.Run(_msgPump);
+        }
+
+        // Try to cleanup on application exit.
+        private void Application_Exit(object sender, EventArgs e)
+        {
+            try {
+                Stop();
+            } catch { }
         }
 
 
-        private Guid guid = Guid.NewGuid();
-
-        public SystemEventWatcher(EventTypeFlag flags)
+        public SystemEventWatcher()
         {
-            _eventFlags = flags;
-            string appdata = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string file = "sysevent.watcher";
-            string filename = System.IO.Path.Combine(appdata, file);
-            _logWriter = new AsyncWriter(filename);
+            _msgPump = new MessagePumpProvider();
+            Application.ApplicationExit += Application_Exit;
         }
 
 

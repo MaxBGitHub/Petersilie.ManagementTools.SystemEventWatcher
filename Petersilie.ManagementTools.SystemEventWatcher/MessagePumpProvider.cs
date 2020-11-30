@@ -1,40 +1,89 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
+using System;
 using System.Windows.Forms;
 
 namespace Petersilie.ManagementTools.SystemEventWatcher
 {
+    /* !======================================!
+    ** !==      IMPORTANT * PLEASE READ     ==!
+    ** !======================================!
+    ** In order to actually listen for any system event you need a
+    ** window which hooks to the windows message pump (WndProc).
+    ** All system events are static events which is why you must
+    ** make sure to detach/remove all event handlers when you end
+    ** the application or dispose it. If you do not detach the handlers
+    ** you will get memory leaks! */
     internal partial class MessagePumpProvider : Form
     {
-        private event EventHandler<MessagePumpEventArgs> onSystemEventConsumed;
-        public event EventHandler<MessagePumpEventArgs> SystemEventConsumed
+        internal event EventHandler<UserPreferenceChangingEventArgs> OnUserPreferenceChanging;
+        internal event EventHandler<UserPreferenceChangedEventArgs> OnUserPreferencedChanged;
+        internal event EventHandler<EventArgs> OnTimeChanged;
+        internal event EventHandler<TimerElapsedEventArgs> OnTimerElapsed;
+        internal event EventHandler<SessionEndedEventArgs> OnSessionEnded;
+        internal event EventHandler<SessionEndingEventArgs> OnSessionEnding;
+        internal event EventHandler<SessionSwitchEventArgs> OnSessionSwitching;
+        internal event EventHandler<PowerModeChangedEventArgs> OnPowerModeChanged;
+        internal event EventHandler<EventArgs> OnPalleteChanged;
+        internal event EventHandler<EventArgs> OnInstalledFontsChanged;
+        internal event EventHandler<EventArgs> OnDisplaySettingsChanging;
+        internal event EventHandler<EventArgs> OnDisplaySettingsChanged;
+        internal event EventHandler<EventArgs> OnEventsThreadShutdown;
+
+
+        internal void SystemEvents_UserPreferenceChanging(object sender, UserPreferenceChangingEventArgs e) { OnUserPreferenceChanging?.Invoke(sender, e); }
+        internal void SystemEvents_UserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e) { OnUserPreferencedChanged?.Invoke(sender, e); }
+        internal void SystemEvents_TimerElapsed(object sender, TimerElapsedEventArgs e) { OnTimerElapsed?.Invoke(sender, e); }
+        internal void SystemEvents_TimeChanged(object sender, EventArgs e) { OnTimeChanged?.Invoke(sender, e); }
+        internal void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e) { OnSessionSwitching?.Invoke(sender, e); }
+        internal void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e) { OnSessionEnding?.Invoke(sender, e); }
+        internal void SystemEvents_SessionEnded(object sender, SessionEndedEventArgs e) { OnSessionEnded?.Invoke(sender, e); }
+        internal void SystemEvents_PowerModeChanged(object sender, PowerModeChangedEventArgs e) { OnPowerModeChanged?.Invoke(sender, e); }
+        internal void SystemEvents_PaletteChanged(object sender, EventArgs e) { OnPalleteChanged?.Invoke(sender, e); }
+        internal void SystemEvents_InstalledFontsChanged(object sender, EventArgs e) { OnInstalledFontsChanged?.Invoke(sender, e); }        
+        internal void SystemEvents_DisplaySettingsChanging(object sender, EventArgs e) { OnDisplaySettingsChanging?.Invoke(sender, e); }
+        internal void SystemEvents_DisplaySettingsChanged(object sender, EventArgs e) { OnDisplaySettingsChanged?.Invoke(sender, e); }
+        internal void SystemEvents_EventsThreadShutdown(object sender, EventArgs e) { OnEventsThreadShutdown?.Invoke(sender, e); }
+
+
+        public void ApplyEvents()
         {
-            add {
-                onSystemEventConsumed += value;
-            }
-            remove {
-                onSystemEventConsumed -= value;
-            }
+            SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
+            SystemEvents.UserPreferenceChanging += SystemEvents_UserPreferenceChanging;
+            SystemEvents.TimeChanged += SystemEvents_TimeChanged;
+            SystemEvents.TimerElapsed += SystemEvents_TimerElapsed;
+            SystemEvents.SessionEnded += SystemEvents_SessionEnded;
+            SystemEvents.SessionEnding += SystemEvents_SessionEnding;
+            SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
+            SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
+            SystemEvents.PaletteChanged += SystemEvents_PaletteChanged;
+            SystemEvents.InstalledFontsChanged += SystemEvents_InstalledFontsChanged;
+            SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
+            SystemEvents.DisplaySettingsChanging += SystemEvents_DisplaySettingsChanging;
+            SystemEvents.EventsThreadShutdown += SystemEvents_EventsThreadShutdown;
         }
 
-        private void OnSystemEventConsumed(MessagePumpEventArgs e)
+
+        public void RemoveEvents()
         {
-            onSystemEventConsumed?.Invoke(this, e);
+            SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
+            SystemEvents.UserPreferenceChanging -= SystemEvents_UserPreferenceChanging;
+            SystemEvents.TimeChanged -= SystemEvents_TimeChanged;
+            SystemEvents.TimerElapsed -= SystemEvents_TimerElapsed;
+            SystemEvents.SessionEnded -= SystemEvents_SessionEnded;
+            SystemEvents.SessionEnding -= SystemEvents_SessionEnding;
+            SystemEvents.SessionSwitch -= SystemEvents_SessionSwitch;
+            SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
+            SystemEvents.PaletteChanged -= SystemEvents_PaletteChanged;
+            SystemEvents.InstalledFontsChanged -= SystemEvents_InstalledFontsChanged;
+            SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
+            SystemEvents.DisplaySettingsChanging -= SystemEvents_DisplaySettingsChanging;
+            SystemEvents.EventsThreadShutdown -= SystemEvents_EventsThreadShutdown;
         }
 
 
-        private EventTypeFlag _eventFlags;
-
-        internal MessagePumpProvider(EventTypeFlag flag)
+        internal MessagePumpProvider()
         {
-            _eventFlags = flag;
-
-            InitializeComponent();            
+            InitializeComponent();
         }
 
         private void MessagePump_Load(object sender, EventArgs e)
@@ -47,223 +96,6 @@ namespace Petersilie.ManagementTools.SystemEventWatcher
             RemoveEvents();
         }
 
-
-        private void AddUserEventHandler()
-        {
-            SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
-            SystemEvents.UserPreferenceChanging += SystemEvents_UserPreferenceChanging;
-        }
-
-        private void RemoveUserEventHandler()
-        {
-            SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
-            SystemEvents.UserPreferenceChanging -= SystemEvents_UserPreferenceChanging;
-        }
-        
-        private void SystemEvents_UserPreferenceChanging(object sender, UserPreferenceChangingEventArgs e)
-        {
-            OnSystemEventConsumed(new MessagePumpEventArgs(e, typeof(UserPreferenceChangingEventArgs), 
-                EventTypeFlag.UserPreference, EventAction.Changing));
-        }
-
-        private void SystemEvents_UserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
-        {
-            OnSystemEventConsumed(new MessagePumpEventArgs(e, typeof(UserPreferenceChangedEventArgs), 
-                EventTypeFlag.UserPreference, EventAction.Changed));
-        }
-
-        private void AddTimeEventHandler()
-        {
-            SystemEvents.TimeChanged += SystemEvents_TimeChanged;
-            SystemEvents.TimerElapsed += SystemEvents_TimerElapsed;
-        }
-
-        private void RemoveTimeEventHandler()
-        {
-            SystemEvents.TimeChanged -= SystemEvents_TimeChanged;
-            SystemEvents.TimerElapsed -= SystemEvents_TimerElapsed;
-        }
-
-        private void SystemEvents_TimerElapsed(object sender, TimerElapsedEventArgs e)
-        {
-            OnSystemEventConsumed(new MessagePumpEventArgs(e, typeof(TimerElapsedEventArgs), 
-                EventTypeFlag.Time, EventAction.Elapsed));
-        }
-
-        private void SystemEvents_TimeChanged(object sender, EventArgs e)
-        {
-            OnSystemEventConsumed(new MessagePumpEventArgs(e, typeof(EventArgs), 
-                EventTypeFlag.Time, EventAction.Changed));
-        }
-
-        private void AddSessionEventHandler()
-        {
-            SystemEvents.SessionEnded   += SystemEvents_SessionEnded;
-            SystemEvents.SessionEnding  += SystemEvents_SessionEnding;
-            SystemEvents.SessionSwitch  += SystemEvents_SessionSwitch;
-        }
-
-        private void RemoveSessionEventHandler()
-        {
-            SystemEvents.SessionEnded   -= SystemEvents_SessionEnded;
-            SystemEvents.SessionEnding  -= SystemEvents_SessionEnding;
-            SystemEvents.SessionSwitch  -= SystemEvents_SessionSwitch;
-        }
-
-        private void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e)
-        {
-            OnSystemEventConsumed(new MessagePumpEventArgs(e, typeof(SessionSwitchEventArgs), 
-                EventTypeFlag.Session, EventAction.Switch));
-        }
-
-        private void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e)
-        {
-            OnSystemEventConsumed(new MessagePumpEventArgs(e, typeof(SessionEndingEventArgs), 
-                EventTypeFlag.Session, EventAction.Ending));
-        }
-
-        private void SystemEvents_SessionEnded(object sender, SessionEndedEventArgs e)
-        {
-            OnSystemEventConsumed(new MessagePumpEventArgs(e, typeof(SessionEndedEventArgs), 
-                EventTypeFlag.Session, EventAction.Ended));
-        }
-
-        private void AddPowerEventHandler()
-        {
-            SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
-        }
-
-        private void RemovePowerEventHandler()
-        {
-            SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
-        }
-
-        private void SystemEvents_PowerModeChanged(object sender, PowerModeChangedEventArgs e)
-        {
-            OnSystemEventConsumed(new MessagePumpEventArgs(e, typeof(PowerModeChangedEventArgs), 
-                EventTypeFlag.Power, EventAction.Changed));
-        }
-
-        private void AddPaletteEventHandler()
-        {
-            SystemEvents.PaletteChanged += SystemEvents_PaletteChanged;
-        }
-
-        private void RemovePaletteEventHandler()
-        {
-            SystemEvents.PaletteChanged -= SystemEvents_PaletteChanged;
-        }
-
-        private void SystemEvents_PaletteChanged(object sender, EventArgs e)
-        {
-            OnSystemEventConsumed(new MessagePumpEventArgs(e, typeof(EventArgs), 
-                EventTypeFlag.Palette, EventAction.Changed));
-        }
-
-        private void AddFontEventHandler()
-        {
-            SystemEvents.InstalledFontsChanged += SystemEvents_InstalledFontsChanged;
-        }
-
-        private void RemoveFontEventHandler()
-        {
-            SystemEvents.InstalledFontsChanged -= SystemEvents_InstalledFontsChanged;
-        }
-
-        private void SystemEvents_InstalledFontsChanged(object sender, EventArgs e)
-        {
-            OnSystemEventConsumed(new MessagePumpEventArgs(e, typeof(EventArgs), 
-                EventTypeFlag.Font, EventAction.Changed));
-        }
-
-        private void AddDisplayEventHandler()
-        {
-            SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
-            SystemEvents.DisplaySettingsChanging += SystemEvents_DisplaySettingsChanging;
-        }
-
-        private void RemoveDisplayEventHandler()
-        {
-            SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
-            SystemEvents.DisplaySettingsChanging -= SystemEvents_DisplaySettingsChanging;
-        }
-
-        private void SystemEvents_DisplaySettingsChanging(object sender, EventArgs e)
-        {
-            OnSystemEventConsumed(new MessagePumpEventArgs(e, typeof(EventArgs),
-                EventTypeFlag.DisplaySetting, EventAction.Changing));
-        }
-
-        private void SystemEvents_DisplaySettingsChanged(object sender, EventArgs e)
-        {
-            OnSystemEventConsumed(new MessagePumpEventArgs(e, typeof(EventArgs),
-                EventTypeFlag.DisplaySetting, EventAction.Changed));
-        }
-
-
-        public void ApplyEvents()
-        {
-            if ((_eventFlags & EventTypeFlag.DisplaySetting) == EventTypeFlag.DisplaySetting) {
-                AddDisplayEventHandler();
-            }
-
-            if ((_eventFlags & EventTypeFlag.Font) == EventTypeFlag.Font) {
-                AddFontEventHandler();
-            }
-
-            if ((_eventFlags & EventTypeFlag.Palette) == EventTypeFlag.Palette) {
-                AddPaletteEventHandler();
-            }
-
-            if ((_eventFlags & EventTypeFlag.Power) == EventTypeFlag.Power) {
-                AddPowerEventHandler();
-            }
-
-            if ((_eventFlags & EventTypeFlag.Session) == EventTypeFlag.Session) {
-                AddSessionEventHandler();
-            }
-
-            if ((_eventFlags & EventTypeFlag.Time) == EventTypeFlag.Time) {
-                AddTimeEventHandler();
-            }
-
-            if ((_eventFlags & EventTypeFlag.UserPreference) == EventTypeFlag.UserPreference)
-            {
-                AddUserEventHandler();
-            }
-        }
-
-
-        public void RemoveEvents()
-        {
-            if ((_eventFlags & EventTypeFlag.DisplaySetting) == EventTypeFlag.DisplaySetting) {
-                RemoveDisplayEventHandler();
-            }
-
-            if ((_eventFlags & EventTypeFlag.Font) == EventTypeFlag.Font) {
-                RemoveFontEventHandler();
-            }
-
-            if ((_eventFlags & EventTypeFlag.Palette) == EventTypeFlag.Palette) {
-                RemovePaletteEventHandler();
-            }
-
-            if ((_eventFlags & EventTypeFlag.Power) == EventTypeFlag.Power) {
-                RemovePowerEventHandler();
-            }
-
-            if ((_eventFlags & EventTypeFlag.Session) == EventTypeFlag.Session) {
-                RemoveSessionEventHandler();
-            }
-
-            if ((_eventFlags & EventTypeFlag.Time) == EventTypeFlag.Time) {
-                RemoveTimeEventHandler();
-            }
-
-            if ((_eventFlags & EventTypeFlag.UserPreference) == EventTypeFlag.UserPreference) {
-                RemoveUserEventHandler();
-            }
-        }
     }
 
 

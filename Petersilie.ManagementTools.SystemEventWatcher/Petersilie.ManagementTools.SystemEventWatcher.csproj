@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{B0CA0DF6-6683-4C87-88B7-154BE48EEE1D}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Petersilie.ManagementTools.SystemEventWatcher</RootNamespace>
     <AssemblyName>Petersilie.ManagementTools.SystemEventWatcher</AssemblyName>
@@ -46,12 +46,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AsyncWriter.cs" />
-    <Compile Include="Enums.cs" />
     <Compile Include="MessagePumpProvider.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="MessagePumpEventArgs.cs" />
     <Compile Include="SystemEventWatcher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
